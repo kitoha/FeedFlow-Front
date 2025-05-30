@@ -14,7 +14,8 @@ import { UserMenu } from "@/components/user-menu"
 import { useToast } from "@/hooks/use-toast"
 import { useMobile } from "@/hooks/use-mobile"
 import { UserAvatar } from "@/components/user-avatar"
-import { isAuthenticated, getUserFromToken, logout } from "@/lib/auth"
+import { isAuthenticated, getUserFromToken, logout, getAuthHeader } from "@/lib/auth"
+import { get } from "@/lib/api"
 
 export default function ActivityFeed() {
   const router = useRouter()
@@ -24,6 +25,7 @@ export default function ActivityFeed() {
   const [selectedContent, setSelectedContent] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [feedItems, setFeedItems] = useState<any[]>([])
   const { toast } = useToast()
   const isMobile = useMobile()
 
@@ -55,64 +57,29 @@ export default function ActivityFeed() {
     checkAuth()
   }, [router])
 
-  const feedItems = [
-    {
-      id: 1,
-      type: "article",
-      title: "The Future of Remote Work",
-      excerpt: "How companies are adapting to the new normal of distributed teams and virtual collaboration.",
-      image: "/placeholder.svg?height=400&width=600",
-      author: "Alex Johnson",
-      date: "2 hours ago",
-      likes: 128,
-      comments: 32,
-    },
-    {
-      id: 2,
-      type: "video",
-      title: "10-Minute Productivity Boost",
-      excerpt: "Learn how to maximize your efficiency with these simple techniques that anyone can implement.",
-      image: "/placeholder.svg?height=400&width=600",
-      author: "Productivity Channel",
-      date: "Yesterday",
-      duration: "10:24",
-      views: "24K",
-      likes: 1024,
-    },
-    {
-      id: 3,
-      type: "article",
-      title: "Healthy Meal Prep Ideas",
-      excerpt: "Simple and nutritious meal preparation ideas that will save you time and keep you healthy.",
-      image: "/placeholder.svg?height=400&width=600",
-      author: "Nutrition Hub",
-      date: "2 days ago",
-      likes: 256,
-      comments: 48,
-    },
-    {
-      id: 4,
-      type: "podcast",
-      title: "The Science of Sleep",
-      excerpt: "Experts discuss the latest research on sleep patterns and how to improve your rest quality.",
-      image: "/placeholder.svg?height=400&width=600",
-      author: "Health Matters Podcast",
-      date: "3 days ago",
-      duration: "42:10",
-      listens: "15K",
-    },
-    {
-      id: 5,
-      type: "article",
-      title: "Financial Planning Basics",
-      excerpt: "Essential tips for managing your finances and planning for the future regardless of your income level.",
-      image: "/placeholder.svg?height=400&width=600",
-      author: "Finance Insights",
-      date: "4 days ago",
-      likes: 512,
-      comments: 96,
-    },
-  ]
+  useEffect(() => {
+    const fetchFeed = async () => {
+      try {
+        const data = await get("/posts?page=0&size=10")
+        setFeedItems(
+          data.content.map((item: any) => ({
+            id: item.id,
+            type: "article", 
+            title: item.content?.split("\n")[0] || "", 
+            excerpt: item.content,
+            image: item.fileUrls[0] || "/placeholder.svg?height=400&width=600",
+            author: item.authorId,
+            date: new Date(item.createdAt).toLocaleDateString(),
+            // comments, likes 등은 추후 백엔드에서 제공시 채우기
+          }))
+        )
+      } catch (err) {
+        setFeedItems([])
+      }
+    }
+
+    fetchFeed()
+  }, [])
 
   const notifications = [
     {
